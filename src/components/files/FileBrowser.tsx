@@ -486,6 +486,15 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
   // Handle download file
   const handleDownloadFile = async (item: IDriveItem, event: React.MouseEvent) => {
     event.stopPropagation();
+    
+    // Check if we can use direct downloadUrl/contentUrl (preferred)
+    if (isFileItem(item) && item.contentUrl) {
+      // Simply open the download URL in a new tab/window
+      window.open(item.contentUrl, '_blank', 'noopener,noreferrer');
+      return;
+    }
+    
+    // Fallback to old method if contentUrl is not available
     if (!item.id || !driveId) return;
 
     try {
