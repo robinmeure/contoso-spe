@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { 
   makeStyles,
   tokens,
@@ -193,37 +193,46 @@ export const FileDetailsPanel: React.FC<FileDetailsPanelProps> = ({
   const [selectedTab, setSelectedTab] = useState<string>('info');
   const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
   const [isLoadingThumbnail, setIsLoadingThumbnail] = useState(false);
-
-  // Load thumbnail for image, video, or PDF files
+  const thumbnailLoadedRef = useRef<string | null>(null);
+  
+  // Load thumbnail only when item or driveId changes
   useEffect(() => {
-    const getThumbnail = async () => {
-      if (!item || !driveId || item.folder) return;
-      
-      const extension = (item.name?.split('.').pop() || '').toLowerCase();
-      const supportedTypes = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff', 'pdf', 'mp4', 'mov'];
-      
-      if (!supportedTypes.includes(extension)) return;
-      
+    // Reset state when item changes
+    if (!item || !driveId || item.folder || !item.id) {
+      setThumbnailUrl(null);
+      return;
+    }
+
+    // Avoid reloading thumbnail for the same item
+    if (thumbnailLoadedRef.current === item.id) {
+      return;
+    }
+
+    const extension = (item.name?.split('.').pop() || '').toLowerCase();
+    const supportedTypes = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff', 'pdf', 'mp4', 'mov'];
+    
+    if (!supportedTypes.includes(extension)) {
+      setThumbnailUrl(null);
+      return;
+    }
+
+    // Define async function inside to avoid dependency issues
+    async function loadThumbnail() {
       try {
         setIsLoadingThumbnail(true);
         const client = await getClient();
         
-        // Check if item.id exists before using it
-        if (!item.id) {
-          console.warn('Cannot load thumbnail: item ID is missing');
-          return;
-        }
+        // Get thumbnail with size preference
+        const thumbnailResponse = await client.getThumbnail(driveId!, item.id!, 'medium');
         
-        // Get thumbnail with size preference (small is default)
-        const thumbnailResponse = await client.getThumbnail(driveId, item.id, 'medium');
-        
-        // Extract URL from the response based on OneDrive API format
+        // Extract URL from the response
         if (thumbnailResponse && 
             thumbnailResponse.value && 
             thumbnailResponse.value.length > 0 && 
             thumbnailResponse.value[0].medium && 
             thumbnailResponse.value[0].medium.url) {
           setThumbnailUrl(thumbnailResponse.value[0].medium.url);
+          thumbnailLoadedRef.current = item.id; // Mark this thumbnail as loaded
         } else {
           console.warn('Thumbnail response did not contain expected URL format');
           setThumbnailUrl(null);
@@ -234,10 +243,12 @@ export const FileDetailsPanel: React.FC<FileDetailsPanelProps> = ({
       } finally {
         setIsLoadingThumbnail(false);
       }
-    };
+    }
+
+    // Call the function to load the thumbnail
+    loadThumbnail();
     
-    getThumbnail();
-  }, [item, driveId, getClient]);
+  }, [driveId, item?.id, item?.folder, item?.name, getClient]);
 
   // If there's no item, return null
   if (!item) return null;

@@ -478,4 +478,83 @@ export class SharePointEmbeddedClient {
     // The consumer can extract the URL from response.value[0][size].url
     return response;
   }
+
+  /**
+   * Gets permissions for a drive item
+   * @param driveId The ID of the drive
+   * @param itemId The ID of the drive item
+   * @returns Array of permissions
+   */
+  public async getDriveItemPermissions(driveId: string, itemId: string): Promise<any[]> {
+    const endpoint = `/drives/${driveId}/items/${itemId}/permissions`;
+    const response = await this._providerClient.api(endpoint).get();
+    return response.value;
+  }
+
+  /**
+   * Updates permissions for a drive item
+   * @param driveId The ID of the drive
+   * @param itemId The ID of the drive item
+   * @param permission The permission object with roles and recipients
+   * @returns The created permission
+   */
+  public async addDriveItemPermission(driveId: string, itemId: string, permission: any): Promise<any> {
+    const endpoint = `/drives/${driveId}/items/${itemId}/invite`;
+    
+    // Ensure the permission object has the correct format
+    // If it's a sharing link request, keep the existing structure
+    if (!permission.link) {
+      // Format for sharing with recipients
+      const requestBody = {
+        requireSignIn: permission.requireSignIn !== undefined ? permission.requireSignIn : true,
+        sendInvitation: permission.sendInvitation !== undefined ? permission.sendInvitation : false,
+        roles: permission.roles || ["read"],
+        recipients: permission.recipients?.map((recipient: any) => ({
+          "@odata.type": "microsoft.graph.driveRecipient",
+          ...recipient
+        })) || [],
+        message: permission.message || ""
+      };
+      
+      return await this._providerClient.api(endpoint).post(requestBody);
+    } else {
+      // For link-based sharing, keep the original structure
+      return await this._providerClient.api(endpoint).post(permission);
+    }
+  }
+
+  /**
+   * Creates a sharing link for a drive item using the createLink API
+   * @param driveId The ID of the drive
+   * @param itemId The ID of the drive item
+   * @param type The type of link to create (view, edit)
+   * @param scope The scope of the link (anonymous, organization)
+   * @returns The created sharing link
+   */
+  public async createSharingLink(
+    driveId: string, 
+    itemId: string, 
+    type: 'view' | 'edit' = 'view',
+    scope: 'anonymous' | 'organization' = 'organization'
+  ): Promise<any> {
+    const endpoint = `/drives/${driveId}/items/${itemId}/createLink`;
+    
+    const requestBody = {
+      type,
+      scope
+    };
+    
+    return await this._providerClient.api(endpoint).post(requestBody);
+  }
+
+  /**
+   * Removes a permission from a drive item
+   * @param driveId The ID of the drive
+   * @param itemId The ID of the drive item
+   * @param permissionId The ID of the permission to remove
+   */
+  public async removeDriveItemPermission(driveId: string, itemId: string, permissionId: string): Promise<void> {
+    const endpoint = `/drives/${driveId}/items/${itemId}/permissions/${permissionId}`;
+    await this._providerClient.api(endpoint).delete();
+  }
 }

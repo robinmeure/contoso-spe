@@ -65,6 +65,7 @@ import { FileDetailsPanel } from './FileDetailsPanel';
 import { CreateFolderDialog } from './CreateFolderDialog';
 import { FileActionsDialog } from './FileActionsDialog';
 import { FilePreviewDialog } from './FilePreviewDialog';
+import { FilePermissionsDialog } from './FilePermissionsDialog';
 import { useFiles } from '../../hooks/useFiles';
 import { CopilotChat } from '../copilot/CopilotChat';
 import { ContainerSettingsDialog } from '../containers/ContainerSettingsDialog';
@@ -384,6 +385,9 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
   const [actionTargetItem, setActionTargetItem] = useState<IDriveItem | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Add permissions dialog state
+  const [permissionsDialogOpen, setPermissionsDialogOpen] = useState<boolean>(false);
+
   // Add upload progress state
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [isUploading, setIsUploading] = useState<boolean>(false);
@@ -519,6 +523,15 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
     }
   };
 
+  // Handle opening the file in a new tab
+  const handleOpenInBrowser = (item: IDriveItem, event: React.MouseEvent) => {
+    event.stopPropagation();
+    if (!item.webUrl) return;
+    
+    // Open the file in a new browser tab
+    window.open(item.webUrl, '_blank', 'noopener,noreferrer');
+  };
+
   // Updated preview file function
   const handlePreviewFile = async (item: IDriveItem, event: React.MouseEvent) => {
     event.stopPropagation();
@@ -629,6 +642,13 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
       console.error('Error uploading files:', err);
       setIsUploading(false);
     }
+  };
+
+  // Handle permissions dialog
+  const handleOpenPermissionsDialog = (item: IDriveItem, event: React.MouseEvent) => {
+    event.stopPropagation();
+    setActionTargetItem(item);
+    setPermissionsDialogOpen(true);
   };
 
   // Define columns for DataGrid
@@ -745,6 +765,12 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
                 {!isFolderItem(item) && (
                   <>
                     <MenuItem 
+                      icon={<OpenRegular />}
+                      onClick={(e) => handleOpenInBrowser(item, e)}
+                    >
+                      Open in Browser
+                    </MenuItem>
+                    <MenuItem 
                       icon={<ArrowDownloadRegular />}
                       onClick={(e) => handleDownloadFile(item, e)}
                     >
@@ -770,10 +796,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
                 </MenuItem>
                 <MenuItem 
                   icon={<PeopleTeamRegular />}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    /* Implement permissions dialog */
-                  }}
+                  onClick={(e) => handleOpenPermissionsDialog(item, e)}
                 >
                   Permissions
                 </MenuItem>
@@ -1074,6 +1097,14 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
         onOpenChange={setPreviewDialogOpen}
         previewUrl={previewUrl}
         fileName={previewFileName}
+      />
+
+      {/* File Permissions Dialog */}
+      <FilePermissionsDialog
+        isOpen={permissionsDialogOpen}
+        onOpenChange={setPermissionsDialogOpen}
+        item={actionTargetItem}
+        driveId={driveId}
       />
 
       {/* Hidden file input for uploads */}
