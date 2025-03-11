@@ -557,4 +557,44 @@ export class SharePointEmbeddedClient {
     const endpoint = `/drives/${driveId}/items/${itemId}/permissions/${permissionId}`;
     await this._providerClient.api(endpoint).delete();
   }
+
+  /**
+   * Gets the detailed listItem information for a specific drive item
+   * This provides the data needed for Copilot file-specific context
+   * @param driveId The ID of the drive
+   * @param itemId The ID of the drive item
+   * @returns An object containing the listItem details including siteId, webId, listId, and uniqueId
+   */
+  public async getListItemDetails(driveId: string, itemId: string): Promise<{
+    siteId: string;
+    webId: string;
+    listId: string;
+    uniqueId: string;
+  }> {
+    try {
+      // First, get the item with expanded listItem fields
+      const endpoint = `/drives/${driveId}/items/${itemId}?$select=sharepointIds`;
+      const response = await this._providerClient.api(endpoint).get();
+      
+      if (!response.sharepointIds) {
+        throw new Error("List item information not available for this drive item.");
+      }
+      
+      const siteId = response.sharepointIds.siteId;
+      const webId = response.sharepointIds.webId;
+      const listId = response.sharepointIds.listId;
+      const uniqueId = response.sharepointIds.listItemUniqueId;
+
+      // Return the formatted data needed for Copilot file context
+      return {
+        siteId: siteId,
+        webId: webId,
+        listId: listId,
+        uniqueId: uniqueId
+      };
+    } catch (error) {
+      console.error("Failed to get list item details:", error);
+      throw error;
+    }
+  }
 }

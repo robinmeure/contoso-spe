@@ -333,6 +333,9 @@ const useStyles = makeStyles({
     marginBottom: tokens.spacingVerticalM,
     color: tokens.colorNeutralForeground3,
   } satisfies GriffelStyle,
+  selectedRow: {
+    backgroundColor: tokens.colorNeutralBackground2,
+  } satisfies GriffelStyle,
 });
 
 interface FileBrowserProps {
@@ -397,6 +400,8 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
 
   const [currentContainer, setCurrentContainer] = useState<IContainer | null>(null); // Add this new state
 
+  const [selectedFiles, setSelectedFiles] = useState<IDriveItem[]>([]);
+
   // Use the files hook to manage file operations
   const { 
       files, 
@@ -448,8 +453,26 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
         onFolderNavigate(item, newBreadcrumbs);
       }
     } else {
-      // Select file
-      onItemSelect(item);
+      // If this item is already selected, deselect it
+      if (selectedItem?.id === item.id) {
+        onItemSelect(null);
+      } else {
+        // Select file
+        onItemSelect(item);
+      }
+    }
+  };
+
+  // Add a handler for background clicks to deselect items
+  const handleBackgroundClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Only process if we're clicking the background, not a row
+    if ((e.target as HTMLElement).closest('[role="row"]')) {
+      return;
+    }
+    
+    // Deselect if we have something selected
+    if (selectedItem) {
+      onItemSelect(null);
     }
   };
 
@@ -492,43 +515,6 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
       // Simply open the download URL in a new tab/window
       window.open(item.contentUrl, '_blank', 'noopener,noreferrer');
       return;
-    }
-    
-    // Fallback to old method if contentUrl is not available
-    if (!item.id || !driveId) return;
-
-    try {
-      const client = await getClient();
-      const stream = await client.getContentStream(driveId, item.id);
-      
-      // Create a blob from the stream
-      const reader = stream.getReader();
-      const chunks: Uint8Array[] = [];
-      
-      let done = false;
-      while (!done) {
-        const { value, done: readerDone } = await reader.read();
-        if (value) {
-          chunks.push(value);
-        }
-        done = readerDone;
-      }
-      
-      const blob = new Blob(chunks);
-      const url = URL.createObjectURL(blob);
-      
-      // Create download link and trigger download
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = item.name || 'download';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      
-      // Clean up the object URL
-      setTimeout(() => URL.revokeObjectURL(url), 100);
-    } catch (err: any) {
-      console.error('Error downloading file:', err);
     }
   };
 
@@ -850,6 +836,19 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
     setSortedFiles(sorted);
   }, [files, sortKey, isSortedDescending]);
 
+  // Update the selection handler with correct types
+  const handleSelectionChange = (
+    e: React.MouseEvent<Element, MouseEvent> | React.KeyboardEvent<Element>,
+    data: { selectedItems: Set<TableRowId> }
+  ) => {
+    const selectedIds = Array.from(data.selectedItems) as string[];
+    const selectedItems = files.filter(file => selectedIds.includes(file.id!));
+    
+    setSelectedFiles(selectedItems);
+    // Keep the single item selection for the details panel
+    onItemSelect(selectedItems.length === 1 ? selectedItems[0] : null);
+  };
+
   return (
     <div className={styles.root}>
       {/* Include the style tag with our embedded chat styles */}
@@ -940,7 +939,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
       </div>
 
       <div className={styles.splitPanel}>
-        <div className={styles.filesList}>
+        <div className={styles.filesList} onClick={handleBackgroundClick}>
           {loading ? (
             <div style={{ padding: '20px', textAlign: 'center' }}>
               <Spinner size="medium" label="Loading files..." />
@@ -999,19 +998,14 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
               />
               <div className={styles.tableContainer}>
                 <DataGrid
+                  selectionMode="multiselect"
+                  resizableColumns={false}
                   items={sortedFiles}
                   columns={columns}
                   getRowId={(item: IDriveItem) => item.id as TableRowId}
                   className={styles.dataGrid}
-                  onSelectionChange={(e, data) => {
-                    // Convert Set to Array to access first item
-                    const selectedIds = Array.from(data.selectedItems);
-                    const selectedItem = sortedFiles.find(item => item.id === selectedIds[0]);
-                    if (selectedItem) {
-                      handleItemClick(selectedItem);
-                    }
-                  }}
-                  selectionMode="single"
+                  onSelectionChange={handleSelectionChange}
+                  selectedItems={new Set(selectedFiles.map(f => f.id!))}
                 >
                   <DataGridHeader>
                     <DataGridRow>
@@ -1023,7 +1017,10 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
                       <DataGridRow<IDriveItem>
                         key={rowId}
                         onClick={() => handleItemClick(item)}
-                        className={styles.dataRow}
+                        className={mergeClasses(
+                          styles.dataRow,
+                          selectedItem?.id === item.id && styles.selectedRow
+                        )}
                       >
                         {({ renderCell }) => renderCell(item)}
                       </DataGridRow>
@@ -1075,8 +1072,8 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
           <div className={styles.copilotPanel}>
             <div className={styles.copilotPanelContent}>
                 <div className='sharepoint-embedded-chat'>
-                  <CopilotChat container={currentContainer!} />
-                  </div>
+                  <CopilotChat container={currentContainer!} selectedFiles={selectedFiles} />
+                </div>
             </div>
           </div>
         )}
