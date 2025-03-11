@@ -117,7 +117,7 @@ const useStyles = makeStyles({
 });
 
 interface FileDetailsPanelProps {
-  item: IDriveItem;
+  item: IDriveItem | null;
   driveId: string | null;
   onPreviewFile?: (item: IDriveItem) => void;
   onDownloadFile?: (item: IDriveItem) => void;
@@ -209,7 +209,7 @@ export const FileDetailsPanel: React.FC<FileDetailsPanelProps> = ({
     }
 
     const extension = (item.name?.split('.').pop() || '').toLowerCase();
-    const supportedTypes = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff', 'pdf', 'mp4', 'mov'];
+    const supportedTypes = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff', 'pdf', 'mp4', 'mov', 'docx', 'doc', 'pptx', 'ppt', 'xlsx', 'xls'];
     
     if (!supportedTypes.includes(extension)) {
       setThumbnailUrl(null);
@@ -219,6 +219,8 @@ export const FileDetailsPanel: React.FC<FileDetailsPanelProps> = ({
     // Define async function inside to avoid dependency issues
     async function loadThumbnail() {
       try {
+        if (item == null) return;
+
         setIsLoadingThumbnail(true);
         const client = await getClient();
         
@@ -250,8 +252,7 @@ export const FileDetailsPanel: React.FC<FileDetailsPanelProps> = ({
     
   }, [driveId, item?.id, item?.folder, item?.name, getClient]);
 
-  // If there's no item, return null
-  if (!item) return null;
+ 
 
   // Format permissions for display
   const formatPermissions = (item: IDriveItem) => {
@@ -259,190 +260,142 @@ export const FileDetailsPanel: React.FC<FileDetailsPanelProps> = ({
     return item.shared ? 'Shared' : 'Private';
   };
 
-  // Get file metadata for Properties tab
-  const getFileProperties = () => {
-    const properties = [
-      { key: 'Name', value: item.name || 'Unknown' },
-      { key: 'Type', value: item.folder ? 'Folder' : getFileExtension(item.name || '') },
-      { key: 'Size', value: item.folder ? `${item.folder.childCount || 0} items` : formatFileSize(item.size) },
-      { key: 'Created', value: formatDate(item.createdDateTime) },
-      { key: 'Modified', value: formatDate(item.lastModifiedDateTime) },
-      { key: 'Created by', value: item.createdBy?.user?.displayName || 'Unknown' },
-      { key: 'Modified by', value: item.lastModifiedBy?.user?.displayName || 'Unknown' },
-      { key: 'Path', value: item.parentReference?.path || '/' },
-      { key: 'Permissions', value: formatPermissions(item) },
-    ];
-
-    if (!item.folder) {
-      properties.push(
-        { key: 'MIME Type', value: getMimeType(item.name || '') }
-      );
-    }
-
-    return properties;
-  };
-
   return (
     <Card className={styles.root}>
       <CardHeader header={
-        <Text weight="semibold">{item.folder ? 'Folder Details' : 'File Details'}</Text>
+        <Text weight="semibold">File Details</Text>
       } />
-      
-      <TabList 
-        selectedValue={selectedTab}
-        onTabSelect={(_, data) => setSelectedTab(data.value as string)}
-        size="small"
-        className={styles.tabList}
-      >
-        <Tab value="info">Info</Tab>
-        <Tab value="properties">Properties</Tab>
-      </TabList>
-      
-      <div className={styles.content}>
-        {selectedTab === 'info' && (
-          <>
-            {/* Quick Actions */}
-            <div className={styles.actionButtons}>
-              {!item.folder && onPreviewFile && (
-                <Button 
-                  icon={<OpenRegular />} 
-                  appearance="subtle"
-                  onClick={() => onPreviewFile(item)}
-                >
-                  Preview
-                </Button>
-              )}
-              {!item.folder && onDownloadFile && (
-                <Button 
-                  icon={<ArrowDownloadRegular />} 
-                  appearance="subtle"
-                  onClick={() => onDownloadFile(item)}
-                >
-                  Download
-                </Button>
-              )}
-              {onRenameFile && (
-                <Button 
-                  icon={<EditRegular />} 
-                  appearance="subtle"
-                  onClick={() => onRenameFile(item)}
-                >
-                  Rename
-                </Button>
-              )}
-              {onDeleteFile && (
-                <Button 
-                  icon={<DeleteRegular />} 
-                  appearance="subtle"
-                  onClick={() => onDeleteFile(item)}
-                >
-                  Delete
-                </Button>
-              )}
-            </div>
 
-            {/* Thumbnail for images, videos, PDFs */}
-            {isLoadingThumbnail && (
-              <div style={{ textAlign: 'center', padding: tokens.spacingVerticalM }}>
-                <Spinner size="tiny" label="Loading thumbnail..." />
-              </div>
-            )}
-            {thumbnailUrl && !isLoadingThumbnail && (
-              <img src={thumbnailUrl} alt={item.name!} className={styles.thumbnail} />
-            )}
-
-            {/* Basic Info */}
-            <div className={styles.field}>
-              <Text className={styles.label}>Name</Text>
-              <Text className={styles.value}>{item.name}</Text>
-            </div>
-            
-            {!item.folder && (
-              <div className={styles.field}>
-                <Text className={styles.label}>Type</Text>
-                <Text className={styles.value}>
-                  {getFileExtension(item.name || '')} File
-                </Text>
-              </div>
-            )}
-            
-            <div className={styles.field}>
-              <Text className={styles.label}>
-                {item.folder ? 'Contains' : 'Size'}
-              </Text>
-              <Text className={styles.value}>
-                {item.folder ? 
-                  `${item.folder.childCount || 0} items` : 
-                  formatFileSize(item.size)}
-              </Text>
-            </div>
-
-            <Divider className={styles.divider} />
-            
-            {/* Modification Info */}
-            {item.lastModifiedDateTime && (
-              <div className={styles.field}>
-                <Text className={styles.label}>Last modified</Text>
-                <Text className={styles.value}>
-                  {formatDate(item.lastModifiedDateTime)}
-                </Text>
-              </div>
-            )}
-            
-            {item.lastModifiedBy && (
-              <div className={styles.field}>
-                <Text className={styles.label}>Modified by</Text>
-                <div className={styles.userName}>
-                  <Avatar 
-                    name={item.lastModifiedBy.user?.displayName || 'Unknown'} 
-                    className={styles.userAvatar}
-                    size={24}
-                  />
-                  <Text className={styles.value}>
-                    {item.lastModifiedBy.user?.displayName}
-                  </Text>
-                </div>
-              </div>
-            )}
-            
-            {/* Tags - demo feature */}
-            <div className={styles.field}>
-              <Text className={styles.label}>Tags</Text>
-              <div className={styles.metaTags}>
-                {/* These would come from the API in a real application */}
-                <span className={styles.tag}>
-                  <TagRegular fontSize={12} />
-                  <span>Document</span>
-                </span>
-                <span className={styles.tag}>
-                  <TagRegular fontSize={12} />
-                  <span>Project</span>
-                </span>
-                <Button 
-                  appearance="transparent" 
-                  size="small"
-                  title="Add tag"
-                >
-                  + Add
-                </Button>
-              </div>
-            </div>
-          </>
-        )}
-        
-        {selectedTab === 'properties' && (
-          <table className={styles.propertyTable}>
-            <tbody>
-              {getFileProperties().map((prop, index) => (
-                <tr key={index} className={styles.propertyRow}>
-                  <td className={styles.propertyKey}>{prop.key}</td>
-                  <td>{prop.value}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+      {item &&(
+         <div className={styles.content}>
+         {/* Quick Actions */}
+         <div className={styles.actionButtons}>
+           {!item.folder && onPreviewFile && (
+             <Button 
+               icon={<OpenRegular />} 
+               appearance="subtle"
+               onClick={() => onPreviewFile(item)}
+             >
+               Preview
+             </Button>
+           )}
+           {!item.folder && onDownloadFile && (
+             <Button 
+               icon={<ArrowDownloadRegular />} 
+               appearance="subtle"
+               onClick={() => onDownloadFile(item)}
+             >
+               Download
+             </Button>
+           )}
+           {onRenameFile && (
+             <Button 
+               icon={<EditRegular />} 
+               appearance="subtle"
+               onClick={() => onRenameFile(item)}
+             >
+               Rename
+             </Button>
+           )}
+           {onDeleteFile && (
+             <Button 
+               icon={<DeleteRegular />} 
+               appearance="subtle"
+               onClick={() => onDeleteFile(item)}
+             >
+               Delete
+             </Button>
+           )}
+         </div>
+ 
+         {/* Thumbnail for images, videos, PDFs */}
+         {isLoadingThumbnail && (
+           <div style={{ textAlign: 'center', padding: tokens.spacingVerticalM }}>
+             <Spinner size="tiny" label="Loading thumbnail..." />
+           </div>
+         )}
+         {thumbnailUrl && !isLoadingThumbnail && (
+           <img src={thumbnailUrl} alt={item.name!} className={styles.thumbnail} />
+         )}
+ 
+         {/* Basic Info */}
+         <div className={styles.field}>
+           <Text className={styles.label}>Name</Text>
+           <Text className={styles.value}>{item.name}</Text>
+         </div>
+         
+         {!item.folder && (
+           <div className={styles.field}>
+             <Text className={styles.label}>Type</Text>
+             <Text className={styles.value}>
+               {getFileExtension(item.name || '')} File
+             </Text>
+           </div>
+         )}
+         
+         <div className={styles.field}>
+           <Text className={styles.label}>
+             {item.folder ? 'Contains' : 'Size'}
+           </Text>
+           <Text className={styles.value}>
+             {item.folder ? 
+               `${item.folder.childCount || 0} items` : 
+               formatFileSize(item.size)}
+           </Text>
+         </div>
+ 
+         <Divider className={styles.divider} />
+         
+         {/* Modification Info */}
+         {item.lastModifiedDateTime && (
+           <div className={styles.field}>
+             <Text className={styles.label}>Last modified</Text>
+             <Text className={styles.value}>
+               {formatDate(item.lastModifiedDateTime)}
+             </Text>
+           </div>
+         )}
+         
+         {item.lastModifiedBy && (
+           <div className={styles.field}>
+             <Text className={styles.label}>Modified by</Text>
+             <div className={styles.userName}>
+               <Avatar 
+                 name={item.lastModifiedBy.user?.displayName || 'Unknown'} 
+                 className={styles.userAvatar}
+                 size={24}
+               />
+               <Text className={styles.value}>
+                 {item.lastModifiedBy.user?.displayName}
+               </Text>
+             </div>
+           </div>
+         )}
+         
+         {/* Tags - demo feature */}
+         <div className={styles.field}>
+           <Text className={styles.label}>Tags</Text>
+           <div className={styles.metaTags}>
+             {/* These would come from the API in a real application */}
+             <span className={styles.tag}>
+               <TagRegular fontSize={12} />
+               <span>Document</span>
+             </span>
+             <span className={styles.tag}>
+               <TagRegular fontSize={12} />
+               <span>Project</span>
+             </span>
+             <Button 
+               appearance="transparent" 
+               size="small"
+               title="Add tag"
+             >
+               + Add
+             </Button>
+           </div>
+         </div>
+         </div>
+      )}
     </Card>
   );
 };

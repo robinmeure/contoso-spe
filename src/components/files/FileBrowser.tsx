@@ -209,19 +209,30 @@ const useStyles = makeStyles({
     display: 'flex',
     flexDirection: 'row',
     height: '100%',
-    gap: tokens.spacingHorizontalL,
   } satisfies GriffelStyle,
   filesList: {
     flexGrow: 1,
+    flexBasis: '70%',
     overflow: 'hidden',
     display: 'flex',
     flexDirection: 'column',
   } satisfies GriffelStyle,
+  rightPanels: {
+    display: 'flex',
+    flexDirection: 'row', // Change to row for horizontal layout
+    width: 'auto', // Allow the container to size based on content
+    flexShrink: 0,
+    gap: tokens.spacingHorizontalL, // Change to horizontal spacing
+    marginLeft: tokens.spacingHorizontalL,
+  } satisfies GriffelStyle,
   detailsPanel: {
-    width: '300px',
     borderLeft: `1px solid ${tokens.colorNeutralStroke1}`,
     paddingLeft: tokens.spacingHorizontalM,
+    overflow: 'auto',
+    flexShrink: 0,
+    width: '300px', // Set explicit width
   } satisfies GriffelStyle,
+ 
   dataGrid: {
     height: '100%',
     overflowY: 'auto',
@@ -268,14 +279,17 @@ const useStyles = makeStyles({
   copilotPanel: {
     display: 'flex',
     flexDirection: 'column',
-    flexGrow: 1,
-    minHeight: '0',
+    minHeight: '300px',
+    maxHeight:'85vh',
+    width: '400px', // Set explicit width 
     borderRadius: tokens.borderRadiusMedium,
     boxShadow: tokens.shadow4,
+    overflow: 'auto',
+    borderLeft: `1px solid ${tokens.colorNeutralStroke1}`,
+    paddingLeft: tokens.spacingHorizontalM,
+    marginTop: '0', // Remove top margin since panels are side by side now
   } satisfies GriffelStyle,
-  copilotPanelContent:
-  {
-  //  height: '100%',
+  copilotPanelContent: {
     minWidth: '100%',
     maxWidth: '100%',
     width: '100%',
@@ -997,36 +1011,44 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
                 }
               />
               <div className={styles.tableContainer}>
-                <DataGrid
-                  selectionMode="multiselect"
-                  resizableColumns={false}
-                  items={sortedFiles}
-                  columns={columns}
-                  getRowId={(item: IDriveItem) => item.id as TableRowId}
-                  className={styles.dataGrid}
-                  onSelectionChange={handleSelectionChange}
-                  selectedItems={new Set(selectedFiles.map(f => f.id!))}
-                >
-                  <DataGridHeader>
-                    <DataGridRow>
-                      {({ renderHeaderCell }) => renderHeaderCell()}
-                    </DataGridRow>
-                  </DataGridHeader>
-                  <DataGridBody<IDriveItem>>
-                    {({ item, rowId }) => (
-                      <DataGridRow<IDriveItem>
-                        key={rowId}
-                        onClick={() => handleItemClick(item)}
-                        className={mergeClasses(
-                          styles.dataRow,
-                          selectedItem?.id === item.id && styles.selectedRow
+                <div style={{ display: 'flex' }}>
+                  <div style={{ width: '80%', flexShrink: 0 }}>
+                    <DataGrid
+                      selectionMode="multiselect"
+                      resizableColumns={false}
+                      items={sortedFiles}
+                      columns={columns}
+                      getRowId={(item: IDriveItem) => item.id as TableRowId}
+                      className={styles.dataGrid}
+                      onSelectionChange={handleSelectionChange}
+                      selectedItems={new Set(selectedFiles.map(f => f.id!))}
+                    >
+                      <DataGridHeader>
+                        <DataGridRow>
+                          {({ renderHeaderCell }) => renderHeaderCell()}
+                        </DataGridRow>
+                      </DataGridHeader>
+                      <DataGridBody<IDriveItem>>
+
+                        {({ item, rowId }) => (
+                          <DataGridRow<IDriveItem>
+                            key={rowId}
+                            onClick={() => handleItemClick(item)}
+                            className={mergeClasses(
+                              styles.dataRow,
+                              selectedItem?.id === item.id && styles.selectedRow
+                            )}
+                          >
+                            {({ renderCell }) => renderCell(item)}
+                          </DataGridRow>
                         )}
-                      >
-                        {({ renderCell }) => renderCell(item)}
-                      </DataGridRow>
-                    )}
-                  </DataGridBody>
-                </DataGrid>
+                      </DataGridBody>
+                    </DataGrid>
+                  </div>
+                  <div style={{ width: '20%', flexShrink: 0, paddingLeft: tokens.spacingHorizontalM }}>
+                   <FileDetailsPanel item={selectedItem} driveId={driveId} />
+                  </div>
+                </div>
               </div>
 
               {showMetadata && (
@@ -1060,21 +1082,22 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
           )}
         </div>
         
-        {/* File details panel */}
-        {selectedItem && !isCopilotOpen && (
-          <div className={styles.detailsPanel}>
-            <FileDetailsPanel item={selectedItem} driveId={driveId} />
-          </div>
-        )}
+        {/* Right side panels container */}
+        {(selectedItem || isCopilotOpen) && (
+          <div className={styles.rightPanels}>
+            {/* File details panel - always rendered but conditionally visible */}
+            
 
-        {/* Copilot Panel */}
-        {isCopilotOpen && (
-          <div className={styles.copilotPanel}>
-            <div className={styles.copilotPanelContent}>
-                <div className='sharepoint-embedded-chat'>
-                  <CopilotChat container={currentContainer!} selectedFiles={selectedFiles} />
+            {/* Copilot Panel - show when toggled */}
+            {isCopilotOpen && currentContainer && (
+              <div className={styles.copilotPanel}>
+                <div className={styles.copilotPanelContent}>
+                  <div className='sharepoint-embedded-chat'>
+                    <CopilotChat container={currentContainer} selectedFiles={selectedFiles} />
+                  </div>
                 </div>
-            </div>
+              </div>
+            )}
           </div>
         )}
       </div>
