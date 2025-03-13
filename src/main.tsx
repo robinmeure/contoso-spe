@@ -49,7 +49,7 @@ const ThemedApp: React.FC = () => {
 };
 
 const authRequest = {
-    scopes: ["openid", "profile", import.meta.env.VITE_BACKEND_SCOPE || ""]
+    scopes: ["openid", "profile", import.meta.env.VITE_PUBLIC_APP_SCOPE || ""]
   };
   
 const root = ReactDOM.createRoot(container);

@@ -127,6 +127,7 @@ export const CopilotChat: React.FC<CopilotChatProps> = ({ container, selectedFil
         authProvider={ChatAuthProvider.instance}
         onApiReady={handleApiReady}
         containerId={container.id!}
+      
       />
     </div>
   );

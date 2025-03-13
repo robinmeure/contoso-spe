@@ -3,6 +3,8 @@ import { useMsal } from '@azure/msal-react';
 import { ChatLaunchConfig } from '@microsoft/sharepointembedded-copilotchat-react';
 import { ChatAuthProvider } from '../providers/ChatAuthProvider';
 import { ChatProvider } from '../providers/ChatProvider';
+import { useTheme } from '../theme/ThemeContext';
+import { webLightTheme, webDarkTheme } from '@fluentui/react-components';
 
 /**
  * Hook to handle Copilot Chat configuration
@@ -12,6 +14,7 @@ export function useCopilotChat() {
   const [isConfigured, setIsConfigured] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [chatConfig, setChatConfig] = useState<ChatLaunchConfig | null>(null);
+  const { theme } = useTheme();
 
   useEffect(() => {
     const configureChat = async () => {
@@ -83,6 +86,8 @@ export function useCopilotChat() {
         const newChatConfig: ChatLaunchConfig = {
           // Add required properties for ChatLaunchConfig
           instruction: 'Please ask your question or type / to add people.',
+          header: 'Contoso LTD Copilot Chat',
+          chatInputPlaceholder: 'Ask questions or type / to add people.',
         };
         
         // Store in provider and set local state

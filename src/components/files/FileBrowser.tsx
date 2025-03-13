@@ -867,7 +867,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
     <div className={styles.root}>
       {/* Include the style tag with our embedded chat styles */}
       <style dangerouslySetInnerHTML={{ __html: embeddedChatStyle }} />
-      <style dangerouslySetInnerHTML={{ __html: chatWrapperStyle }} />
+      {/* <style dangerouslySetInnerHTML={{ __html: chatWrapperStyle }} />*/}
       <div className={styles.header}>
         <Text className={styles.title}>
           <FolderRegular />

@@ -11,7 +11,7 @@ export const useAuth = () => {
   const userId = account ? account.localAccountId : "";
 
   const accessTokenRequest = {
-    scopes: [import.meta.env.VITE_BACKEND_SCOPE || ""],
+    scopes: [import.meta.env.VITE_PUBLIC_APP_SCOPE || ""],
     account: account || undefined
   };
 
