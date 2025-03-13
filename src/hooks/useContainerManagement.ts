@@ -9,6 +9,8 @@ export interface UseContainerManagementResult {
   error: string | null;
   selectContainer: (container: IContainer) => Promise<void>;
   driveId: string | null;
+  refreshContainer: () => Promise<void>;
+  fetchContainerDetails: (containerId: string) => Promise<IContainer>;
 }
 
 export function useContainerManagement(): UseContainerManagementResult {
@@ -17,6 +19,20 @@ export function useContainerManagement(): UseContainerManagementResult {
   const [driveId, setDriveId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+
+  const fetchContainerDetails = useCallback(async (containerId: string): Promise<IContainer> => {
+    try {
+      const client = await getClient();
+      // Get complete container details with drive information and quota
+      const containerDetails = await client.getContainer(containerId, {
+        expand: 'drive($expand=quota)'
+      });
+      return containerDetails;
+    } catch (err) {
+      console.error('Error fetching container details:', err);
+      throw err;
+    }
+  }, [getClient]);
 
   const selectContainer = useCallback(async (container: IContainer) => {
     // Don't fetch if we already have this container selected with drive info
@@ -28,11 +44,8 @@ export function useContainerManagement(): UseContainerManagementResult {
       setIsLoading(true);
       setError(null);
       
-      // Get client
-      const client = await getClient();
-      
-      // Fetch full container details to ensure we have drive information
-      const containerDetails = await client.getContainer(container.id);
+      // Fetch full container details with drive and quota information
+      const containerDetails = await fetchContainerDetails(container.id);
       setSelectedContainer(containerDetails);
       
       const containerDriveId = containerDetails.drive?.id;
@@ -44,13 +57,35 @@ export function useContainerManagement(): UseContainerManagementResult {
     } finally {
       setIsLoading(false);
     }
-  }, [getClient, selectedContainer, driveId]);
+  }, [fetchContainerDetails, selectedContainer, driveId]);
+
+  const refreshContainer = useCallback(async () => {
+    if (!selectedContainer) return;
+    
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      const refreshedContainer = await fetchContainerDetails(selectedContainer.id);
+      setSelectedContainer(refreshedContainer);
+      
+      const containerDriveId = refreshedContainer.drive?.id;
+      setDriveId(containerDriveId || null);
+    } catch (err) {
+      console.error('Error refreshing container:', err);
+      setError(`Failed to refresh container: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [fetchContainerDetails, selectedContainer]);
 
   return {
     selectedContainer,
     driveId,
     isLoading,
     error,
-    selectContainer
+    selectContainer,
+    refreshContainer,
+    fetchContainerDetails
   };
 }
