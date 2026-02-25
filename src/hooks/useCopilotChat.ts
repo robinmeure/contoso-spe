@@ -3,8 +3,6 @@ import { useMsal } from '@azure/msal-react';
 import { ChatLaunchConfig } from '@microsoft/sharepointembedded-copilotchat-react';
 import { ChatAuthProvider } from '../providers/ChatAuthProvider';
 import { ChatProvider } from '../providers/ChatProvider';
-import { useTheme } from '../theme/ThemeContext';
-import { webLightTheme, webDarkTheme } from '@fluentui/react-components';
 
 /**
  * Hook to handle Copilot Chat configuration
@@ -14,7 +12,6 @@ export function useCopilotChat() {
   const [isConfigured, setIsConfigured] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [chatConfig, setChatConfig] = useState<ChatLaunchConfig | null>(null);
-  const { theme } = useTheme();
 
   useEffect(() => {
     const configureChat = async () => {

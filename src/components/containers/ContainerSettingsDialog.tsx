@@ -47,8 +47,6 @@ import {
   Dismiss20Regular,
   Dismiss24Regular,
   Info20Regular,
-  Calendar20Regular,
-  DocumentRegular,
   StorageRegular
 } from '@fluentui/react-icons';
 import { IColumnDefinition, IColumnCreateRequest, IContainer, ICustomProperties, ICustomProperty, IRecycleBinItem } from '../../api';

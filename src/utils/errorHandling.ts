@@ -16,9 +16,9 @@ export enum ErrorSeverity {
 export interface ErrorContext {
   component?: string;
   operation?: string;
-  params?: Record<string, any>;
+  params?: Record<string, unknown>;
   user?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**
@@ -95,7 +95,7 @@ export class ErrorHandler implements IErrorHandler {
   /**
    * Send telemetry to a monitoring service (placeholder)
    */
-  private sendToMonitoringService(logEntry: any): void {
+  private sendToMonitoringService(logEntry: Record<string, unknown>): void {
     // Implementation would integrate with Azure Monitor, Application Insights, etc.
     // For now we're just stubbing this method
   }
@@ -103,7 +103,7 @@ export class ErrorHandler implements IErrorHandler {
   /**
    * Notify about critical errors (placeholder)
    */
-  private notifyCriticalError(logEntry: any): void {
+  private notifyCriticalError(logEntry: Record<string, unknown>): void {
     // Would send email/SMS/Slack notifications about critical errors
     // For now we're just stubbing this method
   }

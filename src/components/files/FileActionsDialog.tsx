@@ -66,7 +66,7 @@ export const FileActionsDialog: React.FC<FileActionsDialogProps> = ({
   if (!item) return null;
 
   const isOpen = dialogType !== null;
-  const isFolder = 'folder' in item && Boolean((item as any).folder);
+  const isFolder = 'folder' in item && Boolean(item.folder);
   const itemType = isFolder ? 'Folder' : 'File';
 
   return (

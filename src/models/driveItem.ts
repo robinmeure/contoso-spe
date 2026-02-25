@@ -36,7 +36,7 @@ export class DriveItemArrayConstructor {
   /**
    * Convert API response to typed array
    */
-  static from(items: any[]): IDriveItem[] {
+  static from(items: Record<string, unknown>[]): IDriveItem[] {
     return items.map(item => {
       // For consistency, ensure all items have at least 
       // the base properties even if the API doesn't provide them

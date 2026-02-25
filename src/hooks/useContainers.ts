@@ -7,33 +7,14 @@ import {
   ICustomProperties,
   ICustomProperty,
   IColumnDefinition,
-  IColumnCreateRequest
+  IColumnCreateRequest,
+  ContainerPermission,
+  PermissionRequest
 } from '../api';
 import { IContainerService } from '../services/interfaces/IContainerService';
 import { errorHandler, ErrorContext } from '../utils/errorHandling';
 
-export interface ContainerPermission {
-  id: string;
-  roles: string[];
-  grantedToV2: {
-    user?: {
-      displayName: string;
-      email: string;
-      userPrincipalName: string;
-    };
-    group?: {
-      displayName: string;
-      email?: string;
-    };
-  };
-}
-
-export interface PermissionRequest {
-  roles: string[];
-  recipients: {
-    email: string;
-  }[];
-}
+export type { ContainerPermission, PermissionRequest } from '../models/container';
 
 export interface UseContainersResult {
   containers: IContainer[];
@@ -77,8 +58,8 @@ export function useContainers(containerService: IContainerService): UseContainer
     try {
       const data = await containerService.getContainers();
       setContainers(data);
-    } catch (err: any) {
-      const errorMsg = err.message || 'Failed to load containers';
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to load containers';
       setError(errorMsg);
       
       const context: ErrorContext = {
@@ -98,8 +79,8 @@ export function useContainers(containerService: IContainerService): UseContainer
     try {
       await containerService.createContainer(container);
       await loadContainers(); // Refresh the list after creating
-    } catch (err: any) {
-      const errorMsg = err.message || 'Failed to create container';
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to create container';
       setError(errorMsg);
       
       const context: ErrorContext = {
@@ -118,8 +99,8 @@ export function useContainers(containerService: IContainerService): UseContainer
   const getContainerPermissions = useCallback(async (containerId: string): Promise<ContainerPermission[]> => {
     try {
       return await containerService.getContainerPermissions(containerId);
-    } catch (err: any) {
-      const errorMsg = err.message || 'Failed to load permissions';
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to load permissions';
       setError(errorMsg);
       
       const context: ErrorContext = {
@@ -136,8 +117,8 @@ export function useContainers(containerService: IContainerService): UseContainer
   const updateContainerPermissions = useCallback(async (containerId: string, request: PermissionRequest) => {
     try {
       await containerService.updateContainerPermissions(containerId, request);
-    } catch (err: any) {
-      const errorMsg = err.message || 'Failed to add permission';
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to add permission';
       setError(errorMsg);
       
       const context: ErrorContext = {
@@ -154,8 +135,8 @@ export function useContainers(containerService: IContainerService): UseContainer
   const deleteContainerPermission = useCallback(async (containerId: string, permissionId: string) => {
     try {
       await containerService.deleteContainerPermission(containerId, permissionId);
-    } catch (err: any) {
-      const errorMsg = err.message || 'Failed to delete permission';
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to delete permission';
       setError(errorMsg);
       
       const context: ErrorContext = {
@@ -173,8 +154,8 @@ export function useContainers(containerService: IContainerService): UseContainer
   const getContainerCustomProperties = useCallback(async (containerId: string): Promise<ICustomProperties> => {
     try {
       return await containerService.getContainerCustomProperties(containerId);
-    } catch (err: any) {
-      const errorMsg = err.message || 'Failed to load custom properties';
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to load custom properties';
       setError(errorMsg);
       
       const context: ErrorContext = {
@@ -195,8 +176,8 @@ export function useContainers(containerService: IContainerService): UseContainer
   ) => {
     try {
       await containerService.updateContainerCustomProperty(containerId, propertyKey, property);
-    } catch (err: any) {
-      const errorMsg = err.message || 'Failed to add custom property';
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to add custom property';
       setError(errorMsg);
       
       const context: ErrorContext = {
@@ -217,8 +198,8 @@ export function useContainers(containerService: IContainerService): UseContainer
   ) => {
     try {
       await containerService.updateContainerCustomProperty(containerId, propertyKey, property);
-    } catch (err: any) {
-      const errorMsg = err.message || 'Failed to update custom property';
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to update custom property';
       setError(errorMsg);
       
       const context: ErrorContext = {
@@ -235,8 +216,8 @@ export function useContainers(containerService: IContainerService): UseContainer
   const deleteContainerCustomProperty = useCallback(async (containerId: string, propertyKey: string) => {
     try {
       await containerService.deleteContainerCustomProperty(containerId, propertyKey);
-    } catch (err: any) {
-      const errorMsg = err.message || 'Failed to delete custom property';
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to delete custom property';
       setError(errorMsg);
       
       const context: ErrorContext = {
@@ -254,8 +235,8 @@ export function useContainers(containerService: IContainerService): UseContainer
   const getContainerColumns = useCallback(async (containerId: string): Promise<IColumnDefinition[]> => {
     try {
       return await containerService.getContainerColumns(containerId);
-    } catch (err: any) {
-      const errorMsg = err.message || 'Failed to load columns';
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to load columns';
       setError(errorMsg);
       
       const context: ErrorContext = {
@@ -275,8 +256,8 @@ export function useContainers(containerService: IContainerService): UseContainer
   ): Promise<IColumnDefinition> => {
     try {
       return await containerService.createContainerColumn(containerId, column);
-    } catch (err: any) {
-      const errorMsg = err.message || 'Failed to create column';
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to create column';
       setError(errorMsg);
       
       const context: ErrorContext = {
@@ -299,8 +280,8 @@ export function useContainers(containerService: IContainerService): UseContainer
       const updatedColumn = await containerService.updateContainerColumn(containerId, columnId, column);
 
       return updatedColumn;
-    } catch (err: any) {
-      const errorMsg = err.message || 'Failed to update column';
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to update column';
       setError(errorMsg);
       
       const context: ErrorContext = {
@@ -317,8 +298,8 @@ export function useContainers(containerService: IContainerService): UseContainer
   const deleteContainerColumn = useCallback(async (containerId: string, columnId: string) => {
     try {
       await containerService.deleteContainerColumn(containerId, columnId);
-    } catch (err: any) {
-      const errorMsg = err.message || 'Failed to delete column';
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to delete column';
       setError(errorMsg);
       
       const context: ErrorContext = {
@@ -339,8 +320,8 @@ export function useContainers(containerService: IContainerService): UseContainer
   ): Promise<IContainer> => {
     try {
       return await containerService.updateContainerDetails(containerId, details);
-    } catch (err: any) {
-      const errorMsg = err.message || 'Failed to update container details';
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to update container details';
       setError(errorMsg);
       
       const context: ErrorContext = {

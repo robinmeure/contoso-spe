@@ -96,8 +96,8 @@ export const CreateContainerDialog: React.FC<CreateContainerDialogProps> = ({
       // Reset form and close dialog
       setNewContainer({ displayName: '', description: '' });
       onOpenChange(false);
-    } catch (err: any) {
-      setFormError(err.message || 'Failed to create container');
+    } catch (err: unknown) {
+      setFormError(err instanceof Error ? err.message : 'Failed to create container');
     } finally {
       setLoading(false);
     }

@@ -25,6 +25,10 @@ const msalConfig = {
 
 const pca = new PublicClientApplication(msalConfig);
 
+const authRequest = {
+    scopes: ["openid", "profile", import.meta.env.VITE_PUBLIC_APP_SCOPE || ""]
+  };
+
 const container = document.getElementById('root');
 if (!container) {
   throw new Error('Root element not found');
@@ -47,10 +51,6 @@ const ThemedApp: React.FC = () => {
     </FluentProvider>
   );
 };
-
-const authRequest = {
-    scopes: ["openid", "profile", import.meta.env.VITE_PUBLIC_APP_SCOPE || ""]
-  };
   
 const root = ReactDOM.createRoot(container);
 root.render(

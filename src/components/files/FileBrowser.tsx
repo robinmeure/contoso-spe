@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import type { GriffelStyle } from '@griffel/react';
 import {
   makeStyles,
@@ -72,6 +72,7 @@ import { ContainerSettingsDialog } from '../containers/ContainerSettingsDialog';
 import { useContainers } from '../../hooks/useContainers';
 // Import the type guards to check if an item is a file or folder
 import { IDriveItem, isFileItem, isFolderItem } from '../../models/driveItem';
+import { formatFileSize } from '../../utils/formatters';
 
 
 // Inject inline CSS for sharepoint-embedded-chat
@@ -392,7 +393,6 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
   const [showMetadata, setShowMetadata] = useState<boolean>(false);
 
   // UI state
-  const [sortedFiles, setSortedFiles] = useState<IDriveItem[]>([]);
   const [sortKey, setSortKey] = useState<string>('name');
   const [isSortedDescending, setIsSortedDescending] = useState<boolean>(false);
   
@@ -490,14 +490,10 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
     }
   };
 
-  // Format file size
-  const formatFileSize = (size: number | undefined | null): string => {
+  // Format file size using shared utility
+  const formatSize = (size: number | undefined | null): string => {
     if (size === undefined || size === null) return 'Unknown';
-    
-    if (size < 1024) return `${size} B`;
-    if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
-    if (size < 1024 * 1024 * 1024) return `${(size / (1024 * 1024)).toFixed(1)} MB`;
-    return `${(size / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+    return formatFileSize(size);
   };
 
 
@@ -556,7 +552,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
       
       // Open the preview dialog
       setPreviewDialogOpen(true);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error previewing file:', err);
       
       // Show error in dialog
@@ -579,7 +575,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
       if (selectedItem?.id === actionTargetItem.id) {
         onItemSelect(null);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error renaming item:', err);
     }
   };
@@ -602,7 +598,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
       if (selectedItem?.id === actionTargetItem.id) {
         onItemSelect(null);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error deleting item:', err);
     }
   };
@@ -634,7 +630,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
           await client.uploadFile(driveId, file, folderId, (progress: number) => {
             setUploadProgress(progress);
           });
-        } catch (fileErr: any) {
+        } catch (fileErr: unknown) {
           console.error(`Error uploading ${file.name}:`, fileErr);
         }
       }
@@ -647,7 +643,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error uploading files:', err);
       setIsUploading(false);
     }
@@ -752,7 +748,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
         <DataGridCell>
           {isFolderItem(item) 
             ? `${item.folder.childCount || 0} items` 
-            : isFileItem(item) ? formatFileSize(item.size) : 'Unknown'}
+            : isFileItem(item) ? formatSize(item.size) : 'Unknown'}
         </DataGridCell>
       ),
     }),
@@ -837,9 +833,9 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
     }
   };
 
-  // Update sorted items when items or sort preferences change
-  useEffect(() => {
-    let sorted = [...files];
+  // Derive sorted items from files and sort preferences (no useEffect needed)
+  const sortedFiles = useMemo(() => {
+    const sorted = [...files];
     const column = columns.find(col => col.columnId === sortKey);
     if (column?.compare) {
       sorted.sort((a, b) => {
@@ -847,8 +843,8 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
         return isSortedDescending ? -result : result;
       });
     }
-    setSortedFiles(sorted);
-  }, [files, sortKey, isSortedDescending]);
+    return sorted;
+  }, [files, sortKey, isSortedDescending, columns]);
 
   // Update the selection handler with correct types
   const handleSelectionChange = (

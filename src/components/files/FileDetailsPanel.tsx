@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { 
   makeStyles,
   tokens,
@@ -9,20 +9,17 @@ import {
   Divider,
   Avatar,
   Button,
-  mergeClasses,
-  TabList,
-  Tab,
   Spinner,
 } from '@fluentui/react-components';
 import { 
   EditRegular, 
   ArrowDownloadRegular,
   OpenRegular,
-  ShareRegular,
   DeleteRegular,
   TagRegular,
 } from '@fluentui/react-icons';
 import { IDriveItem, useSPEClient } from '../../api';
+import { formatFileSize as formatFileSizeUtil, formatDate as formatDateUtil } from '../../utils/formatters';
 
 const useStyles = makeStyles({
   root: {
@@ -127,18 +124,13 @@ interface FileDetailsPanelProps {
 
 const formatFileSize = (size: number | null | undefined): string => {
   if (typeof size !== 'number') return 'Unknown';
-  if (size < 1024) return `${size} B`;
-  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
-  if (size < 1024 * 1024 * 1024) return `${(size / (1024 * 1024)).toFixed(1)} MB`;
-  return `${(size / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+  return formatFileSizeUtil(size);
 };
 
 // Format date to be more readable
 const formatDate = (dateString: string | undefined): string => {
   if (!dateString) return 'Unknown';
-  
-  const date = new Date(dateString);
-  return date.toLocaleDateString() + ' at ' + date.toLocaleTimeString();
+  return formatDateUtil(dateString);
 };
 
 // Get file extension

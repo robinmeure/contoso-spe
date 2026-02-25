@@ -10,35 +10,39 @@ export const useAuth = () => {
   const account = accounts && accounts.length > 0 ? accounts[0] : null;
   const userId = account ? account.localAccountId : "";
 
-  const accessTokenRequest = {
-    scopes: [import.meta.env.VITE_PUBLIC_APP_SCOPE || ""],
-    account: account || undefined
-  };
+  const scopes = useMemo(
+    () => [import.meta.env.VITE_PUBLIC_APP_SCOPE || ""],
+    []
+  );
 
   useEffect(() => {
     if (!account) return;
     const fetchData = async () => {
       try {
-        const response = await instance.acquireTokenSilent(accessTokenRequest);
+        const response = await instance.acquireTokenSilent({
+          scopes,
+          account: account || undefined
+        });
         setAccessToken(response.accessToken);
       } catch (error) {
         console.error("Silent token acquisition failed. Acquiring token using redirect.", error);
-        // Optionally call acquireTokenRedirect if needed
-        // await instance.acquireTokenRedirect(accessTokenRequest);
       }
     };
     fetchData();
-  }, [instance, account]);
+  }, [instance, account, scopes]);
 
   const getAccessToken = useCallback(async () => {
     if (!account) throw new Error('No account available for token acquisition');
     if (!accessToken) {
-      const response = await instance.acquireTokenSilent(accessTokenRequest);
+      const response = await instance.acquireTokenSilent({
+        scopes,
+        account: account || undefined
+      });
       setAccessToken(response.accessToken);
       return response.accessToken;
     }
     return accessToken;
-  }, [account, accessToken, instance, accessTokenRequest]);
+  }, [account, accessToken, instance, scopes]);
 
   return useMemo(() => ({ userId, accessToken, getAccessToken }), [userId, accessToken, getAccessToken]);
 };
