@@ -450,8 +450,8 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
       setCurrentContainer(null);
     }
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [driveId, folderId]); // Intentionally exclude loadFiles from dependencies to prevent infinite loops
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- loadFiles and getClient are excluded to prevent infinite loops; effect should only fire on driveId/folderId changes
+  }, [driveId, folderId]);
 
   // Toggle Copilot sidebar
   const toggleCopilot = () => {

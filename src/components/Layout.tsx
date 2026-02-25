@@ -137,10 +137,7 @@ export const Layout: React.FC = () => {
     if (selectedContainer) {
       resetNavigation(selectedContainer.id, selectedContainer.displayName);
     }
-    // Only depend on selectedContainer, since resetNavigation is now memoized
-    // and won't change between renders
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedContainer]);
+  }, [selectedContainer, resetNavigation]);
 
   // Handle container selection with side effects
   const handleContainerSelect = async (container: IContainer | null) => {
