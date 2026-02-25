@@ -16,7 +16,6 @@ import {
   Folder24Filled,
   PersonCircle24Regular,
   Search24Regular,
-  Search24Filled,
   SearchInfo24Filled
 } from '@fluentui/react-icons';
 import { ThemeToggle } from './ThemeToggle';
@@ -122,11 +121,11 @@ const useStyles = makeStyles({
   } as const,
 });
 
+type ActiveView = 'containers' | 'files' | 'search';
+
 export const Layout: React.FC = () => {
   const [selectedItem, setSelectedItem] = useState<IDriveItem | null>(null);
-  const [showContainers, setShowContainers] = useState<boolean>(false);
-  const [showFiles, setShowFiles] = useState<boolean>(true);
-  const [showSearch, setShowSearch] = useState<boolean>(false);
+  const [activeView, setActiveView] = useState<ActiveView>('files');
   
   // Custom hooks for different concerns
   const { selectedContainer, driveId, selectContainer } = useContainerManagement();
@@ -138,23 +137,14 @@ export const Layout: React.FC = () => {
     if (selectedContainer) {
       resetNavigation(selectedContainer.id, selectedContainer.displayName);
     }
-    // Only depend on selectedContainer, since resetNavigation is now memoized
-    // and won't change between renders
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedContainer]);
+  }, [selectedContainer, resetNavigation]);
 
   // Handle container selection with side effects
   const handleContainerSelect = async (container: IContainer | null) => {
     try {
       if (container) {
         await selectContainer(container);
-        
-        // Navigate to file browser after selecting a container
-        setShowContainers(false);
-        setShowFiles(true);
-        setShowSearch(false);
-        
-        // Reset selected item when changing containers
+        setActiveView('files');
         setSelectedItem(null);
       }
     } catch (err) {
@@ -171,27 +161,6 @@ export const Layout: React.FC = () => {
   // Handle item selection
   const handleItemSelect = (item: IDriveItem | null) => {
     setSelectedItem(item);
-  };
-
-  // Toggle container browser visibility
-  const toggleContainerBrowser = () => {
-    setShowContainers(true);
-    setShowFiles(false);
-    setShowSearch(false);
-  };
-
-  // Toggle file browser visibility
-  const toggleFileBrowser = () => {
-    setShowFiles(true);
-    setShowContainers(false);
-    setShowSearch(false);
-  };
-
-  // Toggle search results page visibility
-  const toggleSearchResults = () => {
-    setShowSearch(true);
-    setShowContainers(false);
-    setShowFiles(false);
   };
 
   const styles = useStyles();
@@ -223,28 +192,28 @@ export const Layout: React.FC = () => {
         <div className={styles.leftRail}>
           <Tooltip content="Containers" relationship="label" positioning="after">
             <Button
-              icon={showContainers ? <Database24Filled /> : <Database24Regular />}
+              icon={activeView === 'containers' ? <Database24Filled /> : <Database24Regular />}
               appearance="subtle"
               className={styles.railButton}
-              onClick={toggleContainerBrowser}
+              onClick={() => setActiveView('containers')}
               aria-label="Container Browser"
             />
           </Tooltip>
           <Tooltip content="Files" relationship="label" positioning="after">
             <Button
-              icon={showFiles ? <Folder24Filled /> : <Folder24Regular />}
+              icon={activeView === 'files' ? <Folder24Filled /> : <Folder24Regular />}
               appearance="subtle"
               className={styles.railButton}
-              onClick={toggleFileBrowser}
+              onClick={() => setActiveView('files')}
               aria-label="File Browser"
             />
           </Tooltip>
           <Tooltip content="Search" relationship="label" positioning="after">
             <Button
-              icon={showSearch ? <SearchInfo24Filled /> : <Search24Regular />}
+              icon={activeView === 'search' ? <SearchInfo24Filled /> : <Search24Regular />}
               appearance="subtle"
               className={styles.railButton}
-              onClick={toggleSearchResults}
+              onClick={() => setActiveView('search')}
               aria-label="Search Results"
             />
           </Tooltip>
@@ -252,14 +221,14 @@ export const Layout: React.FC = () => {
         </div>
         
         <main className={styles.mainArea}>
-          {showContainers ? (
+          {activeView === 'containers' ? (
             <div className={styles.browserContainer}>
               <ContainerBrowser 
                 onContainerSelect={handleContainerSelect}
                 selectedContainer={selectedContainer}
               />
             </div>
-          ) : showFiles ? (
+          ) : activeView === 'files' ? (
             <FileBrowser
               driveId={driveId}
               folderId={currentFolderId}
@@ -270,9 +239,9 @@ export const Layout: React.FC = () => {
               onItemSelect={handleItemSelect}
               selectedItem={selectedItem}
               onBreadcrumbNavigate={navigateToBreadcrumb}
-              onNavigateToContainers={toggleContainerBrowser}
+              onNavigateToContainers={() => setActiveView('containers')}
             />
-          ) : showSearch ? (
+          ) : activeView === 'search' ? (
             <SearchResultsPage initialQuery={searchQuery} />
           ) : null}
         </main>

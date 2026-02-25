@@ -61,7 +61,7 @@ export interface ISearchResult {
     lastModifiedDateTime?: string;
     name?: string;
     webUrl?: string;
-    folder?: any;
+    folder?: Record<string, unknown>;
     createdBy?: {
       user?: {
         displayName?: string;
@@ -89,5 +89,5 @@ export interface ISearchResult {
   createdDateTime?: string;
   name?: string;
   webUrl?: string;
-  folder?: any;
+  folder?: Record<string, unknown>;
 }

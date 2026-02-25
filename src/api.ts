@@ -5,7 +5,9 @@ export {
   type IContainerClientCreateRequest,
   type ICustomProperty,
   type ICustomProperties,
-  type IRecycleBinItem
+  type IRecycleBinItem,
+  type ContainerPermission,
+  type PermissionRequest
 } from './models/container';
 
 // Drive item models

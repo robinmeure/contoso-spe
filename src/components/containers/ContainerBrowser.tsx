@@ -1,5 +1,5 @@
 // src/components/containers/ContainerBrowser.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   makeStyles,
   tokens,
@@ -17,7 +17,6 @@ import {
   TableCellLayout,
   Badge,
   Dialog,
-  DialogTrigger,
   DialogSurface,
   DialogTitle,
   DialogBody,
@@ -29,7 +28,6 @@ import {
   FolderAdd20Regular,
   DataArea20Regular,
   Settings20Regular,
-  ArrowRight20Regular,
   InfoRegular,
   Delete20Regular,
   Database24Regular,
@@ -144,8 +142,9 @@ export const ContainerBrowser: React.FC<ContainerBrowserProps> = ({
   
   const { getClient } = useSPEClient();
   
-  // Create a container service that implements IContainerService and delegates to the SharePointEmbeddedClient
-  const containerService: IContainerService = {
+  // Create a memoized container service that implements IContainerService
+  // Memoized on getClient to avoid unnecessary re-renders and infinite useEffect loops
+  const containerService: IContainerService = useMemo(() => ({
     getContainers: async () => {
       const client = await getClient();
       return client.getContainers();
@@ -219,7 +218,7 @@ export const ContainerBrowser: React.FC<ContainerBrowserProps> = ({
       const client = await getClient();
       return client.permanentlyDeleteRecycleBinItem(containerId, itemId);
     }
-  };
+  }), [getClient]);
   
   // Use custom hook for container operations
   const { 
@@ -242,11 +241,10 @@ export const ContainerBrowser: React.FC<ContainerBrowserProps> = ({
     updateContainerDetails
   } = useContainers(containerService);
 
-  // Fetch containers on initial load - only run once
+  // Fetch containers on initial load
   useEffect(() => {
     loadContainers();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadContainers]);
 
   const handleContainerClick = (container: IContainer) => {
     onContainerSelect(container);

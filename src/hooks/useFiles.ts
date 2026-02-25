@@ -1,6 +1,6 @@
 // src/hooks/useFiles.ts
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { IDriveItem, useSPEClient } from '../api';
 import { NavigationItem } from './useFolderNavigation';
 import { isFolderItem } from '../models/driveItem';
@@ -39,8 +39,8 @@ export function useFiles(): UseFilesResult {
       // Fixed: changed getDriveItems to listItems which is the correct method name
       const items = await client.listItems(driveId, folderId);
       setFiles(items);
-    } catch (err: any) {
-      setError(err.message || 'Failed to load files');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to load files');
       console.error('Error loading files:', err);
     } finally {
       setLoading(false);
@@ -79,8 +79,8 @@ export function useFiles(): UseFilesResult {
       await loadFiles(driveId, folderId);
       
       return uploadedFile;
-    } catch (err: any) {
-      setError(err.message || 'Failed to upload file');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to upload file');
       console.error('Error uploading file:', err);
       throw err;
     } finally {
@@ -122,8 +122,8 @@ export function useFiles(): UseFilesResult {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       
-    } catch (err: any) {
-      setError(err.message || 'Failed to download file');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to download file');
       console.error('Error downloading file:', err);
       throw err;
     } finally {
@@ -142,8 +142,8 @@ export function useFiles(): UseFilesResult {
       
       // Update the file list by filtering out the deleted item
       setFiles(prevFiles => prevFiles.filter(file => file.id !== fileId));
-    } catch (err: any) {
-      setError(err.message || 'Failed to delete file');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to delete file');
       console.error('Error deleting file:', err);
       throw err;
     } finally {
@@ -164,8 +164,8 @@ export function useFiles(): UseFilesResult {
       await loadFiles(driveId, parentFolderId);
       
       return newFolder;
-    } catch (err: any) {
-      setError(err.message || 'Failed to create folder');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to create folder');
       console.error('Error creating folder:', err);
       throw err;
     } finally {

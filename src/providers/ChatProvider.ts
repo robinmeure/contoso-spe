@@ -1,4 +1,4 @@
-import { ChatEmbedded, ChatLaunchConfig, IDataSourcesProps } from '@microsoft/sharepointembedded-copilotchat-react';
+import { ChatLaunchConfig, IDataSourcesProps } from '@microsoft/sharepointembedded-copilotchat-react';
 
 type DataSourceSubscriber = (dataSources: IDataSourcesProps[]) => void;
 type ConfigSubscriber = (config: ChatLaunchConfig) => void;

@@ -5,10 +5,12 @@ import {
   IContainerClientCreateRequest, 
   ICustomProperties, 
   ICustomProperty, 
-  IRecycleBinItem
+  IRecycleBinItem,
+  ContainerPermission,
+  PermissionRequest
 } from '../../models/container';
 import { IContainerService } from '../interfaces/IContainerService';
-import { errorHandler, ErrorContext, ErrorSeverity } from '../../utils/errorHandling';
+import { errorHandler, ErrorContext } from '../../utils/errorHandling';
 import { IColumnDefinition, IColumnCreateRequest } from '../../models/column';
 
 /**
@@ -143,7 +145,7 @@ export class ContainerService implements IContainerService {
   /**
    * Get container permissions
    */
-  public async getContainerPermissions(containerId: string): Promise<any[]> {
+  public async getContainerPermissions(containerId: string): Promise<ContainerPermission[]> {
     try {
       const endpoint = `/storage/fileStorage/containers/${containerId}/permissions`;
       const response = await this._client.api(endpoint).get();
@@ -162,7 +164,7 @@ export class ContainerService implements IContainerService {
   /**
    * Update container permissions
    */
-  public async updateContainerPermissions(containerId: string, permissions: any): Promise<any> {
+  public async updateContainerPermissions(containerId: string, permissions: PermissionRequest): Promise<ContainerPermission> {
     try {
       const endpoint = `/storage/fileStorage/containers/${containerId}/permissions`;
       const response = await this._client.api(endpoint).post(permissions);

@@ -8,7 +8,14 @@ export interface IContainer {
   containerTypeId: string;
   containerTypeDisplayName?: string;
   externalGroupId?: string;
-  permissions?: Array<any>; // Can be improved with a proper Permission interface
+  permissions?: Array<{
+    id: string;
+    roles: string[];
+    grantedToV2?: {
+      user?: { displayName: string; email?: string; userPrincipalName?: string };
+      group?: { displayName: string; email?: string };
+    };
+  }>;
   customProperties?: ICustomProperties;
   viewpoint?: {
     effectiveRole?: string;
@@ -39,8 +46,10 @@ export interface IContainer {
       used?: number;
     };
   };
-  recycleBin?: any; // Can be improved with proper recycleBin interface
-  status?: string; // Can be improved with proper enum type
+  recycleBin?: {
+    items?: IRecycleBinItem[];
+  };
+  status?: 'active' | 'inactive' | string;
   createdDateTime: string;
   storageUsedInBytes?: number;
   assignedSensitivityLabel?: {
@@ -91,5 +100,28 @@ export interface IRecycleBinItem {
       userPrincipalName: string;
     };
   };
+}
+
+export interface ContainerPermission {
+  id: string;
+  roles: string[];
+  grantedToV2: {
+    user?: {
+      displayName: string;
+      email: string;
+      userPrincipalName: string;
+    };
+    group?: {
+      displayName: string;
+      email?: string;
+    };
+  };
+}
+
+export interface PermissionRequest {
+  roles: string[];
+  recipients: {
+    email: string;
+  }[];
 }
 

@@ -5,7 +5,6 @@ import {
   DialogContent,
   DialogSurface,
   DialogTitle,
-  DialogTrigger,
   makeStyles,
   tokens,
   Button,

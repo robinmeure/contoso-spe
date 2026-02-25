@@ -22,10 +22,9 @@ import {
   ChevronLeft24Regular,
   ChevronRight24Regular,
   Search24Regular,
-  NumberSymbol24Regular,
-  Globe24Regular} from '@fluentui/react-icons';
+} from '@fluentui/react-icons';
 import { Icon } from '@fluentui/react';
-import { getFileTypeIconProps, FileIconType, initializeFileTypeIcons } from '@fluentui/react-file-type-icons';
+import { getFileTypeIconProps, initializeFileTypeIcons } from '@fluentui/react-file-type-icons';
 import { useSPEClient, ISearchAggregationResult, ISearchOptions, ISearchResult } from '../../api';
 import { formatFileSize, formatDate } from '../../utils/formatters';
 import { SearchFilters, FilterSelection } from './SearchFilters';

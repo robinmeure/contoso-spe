@@ -7,7 +7,9 @@ import {
   ICustomProperties, 
   ICustomProperty, 
  
-  IRecycleBinItem
+  IRecycleBinItem,
+  ContainerPermission,
+  PermissionRequest
 } from '../../models/container';
 
 import { IColumnDefinition, IColumnCreateRequest } from '../../models/column';
@@ -47,12 +49,12 @@ export interface IContainerService {
   /**
    * Get container permissions
    */
-  getContainerPermissions(containerId: string): Promise<any[]>;
+  getContainerPermissions(containerId: string): Promise<ContainerPermission[]>;
   
   /**
    * Update container permissions
    */
-  updateContainerPermissions(containerId: string, permissions: any): Promise<any>;
+  updateContainerPermissions(containerId: string, permissions: PermissionRequest): Promise<ContainerPermission>;
   
   /**
    * Delete a container permission

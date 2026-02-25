@@ -2,7 +2,7 @@ import { Client } from "@microsoft/microsoft-graph-client";
 import { Drive } from "@microsoft/microsoft-graph-types";
 import * as Graph from "@microsoft/microsoft-graph-client";
 
-import { IContainer, IContainerClientCreateRequest, ICustomProperties, ICustomProperty, IRecycleBinItem } from "../models/container";
+import { IContainer, IContainerClientCreateRequest, ICustomProperties, ICustomProperty, IRecycleBinItem, ContainerPermission, PermissionRequest } from "../models/container";
 import { IDriveItem, DriveItemArrayConstructor } from "../models/driveItem";
 import { IColumnDefinition, IColumnCreateRequest } from "../models/column";
 import { ISearchOptions, ISearchResponse, ISearchResult } from "../models/search";
@@ -59,10 +59,10 @@ export class SharePointEmbeddedClient {
     return containers;
   }
 
-  public async getContainer(containerId: string): Promise<IContainer> {
+  public async getContainer(containerId: string, options?: { expand?: string }): Promise<IContainer> {
     const endpoint = `/storage/fileStorage/containers/${containerId}`;
-    const query = {
-      $expand: 'drive'
+    const query: Record<string, string> = {
+      $expand: options?.expand || 'drive'
     };
     const response = await this._providerClient.api(endpoint).query(query).get();
     return response as IContainer;
@@ -154,7 +154,7 @@ export class SharePointEmbeddedClient {
     }
     
     return new Promise<IDriveItem>((resolve, reject) => {
-      fileReader.addEventListener('loadend', async (event: any) => {
+      fileReader.addEventListener('loadend', async () => {
         try {
           // Report reading complete
           if (onProgress) {
@@ -170,16 +170,17 @@ export class SharePointEmbeddedClient {
           }
           
           resolve(response as IDriveItem);
-        } catch (error: any) {
-          reject(new Error(`Failed to upload file ${file.name}: ${error.message}`));
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          reject(new Error(`Failed to upload file ${file.name}: ${message}`));
         }
       });
       
-      fileReader.addEventListener('error', (event: any) => {
-        reject(new Error(`Error on reading file: ${event.message}`));
+      fileReader.addEventListener('error', () => {
+        reject(new Error(`Error on reading file: ${file.name}`));
       });
       
-      fileReader.addEventListener('progress', (event: any) => {
+      fileReader.addEventListener('progress', (event: ProgressEvent) => {
         if (event.lengthComputable && onProgress) {
           // Report progress during file reading (0-50%)
           const percentLoaded = Math.round((event.loaded / event.total) * 50);
@@ -272,13 +273,13 @@ export class SharePointEmbeddedClient {
     await this._providerClient.api(endpoint).delete();
   }
 
-  public async getContainerPermissions(containerId: string): Promise<any[]> {
+  public async getContainerPermissions(containerId: string): Promise<ContainerPermission[]> {
     const endpoint = `/storage/fileStorage/containers/${containerId}/permissions`;
     const response = await this._providerClient.api(endpoint).get();
     return response.value;
   }
 
-  public async updateContainerPermissions(containerId: string, permissions: any): Promise<any> {
+  public async updateContainerPermissions(containerId: string, permissions: PermissionRequest): Promise<ContainerPermission> {
     const endpoint = `/storage/fileStorage/containers/${containerId}/permissions`;
     return await this._providerClient.api(endpoint).post(permissions);
   }
@@ -344,66 +345,35 @@ export class SharePointEmbeddedClient {
     // Global search endpoint
     const endpoint = `/search/query`;
     
-    // Append ContainerTypeId filter to the query
-    let queryString = options.query;
-    // if (!queryString.includes(`ContainerTypeId:${this._containerTypeId}`)) {
-    //   queryString = `${queryString} ContainerTypeId:${this._containerTypeId}`;
-    // }
+    const queryString = options.query;
     
-    // Prepare the search request
-    const searchRequest: any = {
-      requests: [{
-        entityTypes: options.entityTypes || ["driveItem"],
-        query: {
-          queryString: queryString
-        },
-        sharePointOneDriveOptions: {
-          includeHiddenContent: true
-        }
-      }]
+    // Build the search request object
+    const requestEntry: Record<string, unknown> = {
+      entityTypes: options.entityTypes || ["driveItem"],
+      query: { queryString },
+      sharePointOneDriveOptions: { includeHiddenContent: true },
+      fields: options.fields?.length ? options.fields : [
+        "id", "name", "parentReference", "file", "folder", "webUrl",
+        "createdDateTime", "lastModifiedDateTime", "size",
+        "fileSystemInfo", "createdBy", "lastModifiedBy"
+      ],
     };
     
-    // Add requested fields if provided
-    if (options.fields && options.fields.length > 0) {
-      searchRequest.requests[0].fields = options.fields;
-    } else {
-      // Default fields to include
-      searchRequest.requests[0].fields = [
-        "id",
-        "name",
-        "parentReference",
-        "file",
-        "folder",
-        "webUrl",
-        "createdDateTime",
-        "lastModifiedDateTime",
-        "size",
-        "fileSystemInfo",
-        "createdBy",
-        "lastModifiedBy"
-      ];
-    }
-    
-    // Add pagination if provided
     if (options.from !== undefined || options.size !== undefined) {
-      searchRequest.requests[0].from = options.from || 0;
-      searchRequest.requests[0].size = options.size || 25;
+      requestEntry.from = options.from || 0;
+      requestEntry.size = options.size || 25;
+    }
+    if (options.aggregations?.length) {
+      requestEntry.aggregations = options.aggregations;
+    }
+    if (options.aggregationFilters?.length) {
+      requestEntry.aggregationFilters = options.aggregationFilters;
+    }
+    if (options.sortProperties?.length) {
+      requestEntry.sortProperties = options.sortProperties;
     }
     
-    // Add aggregations if provided
-    if (options.aggregations && options.aggregations.length > 0) {
-      searchRequest.requests[0].aggregations = options.aggregations;
-    }
-    
-    // Add aggregation filters if provided
-    if (options.aggregationFilters && options.aggregationFilters.length > 0) {
-      searchRequest.requests[0].aggregationFilters = options.aggregationFilters;
-    }
-    
-    // Add sort properties if provided
-    if (options.sortProperties && options.sortProperties.length > 0) {
-      searchRequest.requests[0].sortProperties = options.sortProperties;
-    }
+    const searchRequest = { requests: [requestEntry] };
     
     // Execute the search request
     const response = await this._providerClient.api(endpoint).post(searchRequest);
@@ -412,29 +382,22 @@ export class SharePointEmbeddedClient {
     if (response.value && response.value.length > 0) {
       const searchResult = response.value[0];
       if (searchResult.hitsContainers && searchResult.hitsContainers.length > 0) {
-        const container = searchResult.hitsContainers[0];
+        const hitsContainer = searchResult.hitsContainers[0];
         
-        // Extract all hits from all containers
-        const allHits: ISearchResult[] = [];
-        
-        if (container.hits && container.hits.length > 0) {
-          container.hits.forEach((hit: ISearchResult) => {
-              allHits.push(hit);
-          });
-        }
+        const allHits: ISearchResult[] = hitsContainer.hits ?? [];
         
         // Extract aggregation results
-        const aggregationResults = container.aggregations 
-          ? container.aggregations.map((agg: any) => ({
+        const aggregationResults = hitsContainer.aggregations 
+          ? hitsContainer.aggregations.map((agg: { field: string; buckets: unknown[] }) => ({
               field: agg.field,
               buckets: agg.buckets
             }))
           : undefined;
         
         return {
-          results: allHits as ISearchResult[],
-          totalResults: container.total || allHits.length,
-          moreResultsAvailable: container.moreResultsAvailable || false,
+          results: allHits,
+          totalResults: hitsContainer.total || allHits.length,
+          moreResultsAvailable: hitsContainer.moreResultsAvailable || false,
           aggregationResults
         };
       }
@@ -470,7 +433,7 @@ export class SharePointEmbeddedClient {
    * @param size The size of the thumbnail (small, medium, large)
    * @returns Thumbnail response with URLs for different sizes
    */
-  public async getThumbnail(driveId: string, itemId: string, size: 'small' | 'medium' | 'large' = 'small'): Promise<any> {
+  public async getThumbnail(driveId: string, itemId: string, size: 'small' | 'medium' | 'large' = 'small'): Promise<Record<string, unknown>> {
     const endpoint = `/drives/${driveId}/items/${itemId}/thumbnails`;
     const response = await this._providerClient.api(endpoint).get();
     
@@ -485,7 +448,7 @@ export class SharePointEmbeddedClient {
    * @param itemId The ID of the drive item
    * @returns Array of permissions
    */
-  public async getDriveItemPermissions(driveId: string, itemId: string): Promise<any[]> {
+  public async getDriveItemPermissions(driveId: string, itemId: string): Promise<Record<string, unknown>[]> {
     const endpoint = `/drives/${driveId}/items/${itemId}/permissions`;
     const response = await this._providerClient.api(endpoint).get();
     return response.value;
@@ -498,7 +461,7 @@ export class SharePointEmbeddedClient {
    * @param permission The permission object with roles and recipients
    * @returns The created permission
    */
-  public async addDriveItemPermission(driveId: string, itemId: string, permission: any): Promise<any> {
+  public async addDriveItemPermission(driveId: string, itemId: string, permission: Record<string, unknown>): Promise<Record<string, unknown>> {
     const endpoint = `/drives/${driveId}/items/${itemId}/invite`;
     
     // Ensure the permission object has the correct format
@@ -509,7 +472,7 @@ export class SharePointEmbeddedClient {
         requireSignIn: permission.requireSignIn !== undefined ? permission.requireSignIn : true,
         sendInvitation: permission.sendInvitation !== undefined ? permission.sendInvitation : false,
         roles: permission.roles || ["read"],
-        recipients: permission.recipients?.map((recipient: any) => ({
+        recipients: permission.recipients?.map((recipient: Record<string, unknown>) => ({
           "@odata.type": "microsoft.graph.driveRecipient",
           ...recipient
         })) || [],
@@ -536,7 +499,7 @@ export class SharePointEmbeddedClient {
     itemId: string, 
     type: 'view' | 'edit' = 'view',
     scope: 'anonymous' | 'organization' = 'organization'
-  ): Promise<any> {
+  ): Promise<Record<string, unknown>> {
     const endpoint = `/drives/${driveId}/items/${itemId}/createLink`;
     
     const requestBody = {
